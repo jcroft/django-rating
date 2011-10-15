@@ -1,6 +1,8 @@
 from django import template
 from django.contrib.contenttypes.models import ContentType
 from django.template.loader import get_template
+from django.core.exceptions import MultipleObjectsReturned
+
 
 from rating.models import *
 from rating.utils import get_target_for_object
@@ -18,6 +20,12 @@ class GetUserRatingNode(template.Node):
       rating = Rating.objects.get(rated_object__object_id=object.id, rated_object__content_type=ContentType.objects.get_for_model(object), user=user)
     except Rating.DoesNotExist:
       rating = None
+    except (Rating.MultipleObjectsReturned, MultipleObjectsReturned):
+      # If, for some reason, there are multiple ratings for the same objects by the same person, straighten this out.
+      ratings = Rating.objects.filter(rated_object__object_id=object.id, rated_object__content_type=ContentType.objects.get_for_model(object), user=user)
+      ratings[1:].delete()
+      rating = Rating.objects.get(rated_object__object_id=object.id, rated_object__content_type=ContentType.objects.get_for_model(object), user=user)
+      
     context[self.var_name] = rating
     return ''
 
