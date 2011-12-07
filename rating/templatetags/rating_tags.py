@@ -23,7 +23,8 @@ class GetUserRatingNode(template.Node):
     except (Rating.MultipleObjectsReturned, MultipleObjectsReturned):
       # If, for some reason, there are multiple ratings for the same objects by the same person, straighten this out.
       ratings = Rating.objects.filter(rated_object__object_id=object.id, rated_object__content_type=ContentType.objects.get_for_model(object), user=user)
-      ratings[1:].delete()
+      for r in ratings[1:]:
+        r.delete()
       rating = Rating.objects.get(rated_object__object_id=object.id, rated_object__content_type=ContentType.objects.get_for_model(object), user=user)
       
     context[self.var_name] = rating
